@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<!-- 
+  تصرّف كمهندس برمجيات خبير (Full-Stack Senior Engineer)
+  هذا ملف HTML واحد يمثل تطبيق متجر إلكتروني متكامل. (نسخة مُصححة v1.1)
+  يستخدم TailwindCSS، Supabase، Cloudinary، و OpenRouter.
+-->
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-M">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر إلكتروني متكامل</title>
+
+    <!-- 1. تحميل Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. تحميل مكتبات Supabase و Cloudinary و Lucide Icons -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://upload-widget.cloudinary.com/global/all.js" type="text/javascript"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- 3. إعدادات Tailwind المخصصة + خطوط + أنماط CSS الرئيسية -->
+    <style type="text/tailwindcss">
+        @layer base {
+            /* استخدام خط متوافق مع اللغات الثلاث */
+            html {
+                font-family: 'Inter', 'Cairo', 'Rubik', sans-serif;
+            }
+            /* إخفاء السكرول بار الافتراضي */
+            ::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            ::-webkit-scrollbar-thumb {
+                @apply bg-gray-400 dark:bg-gray-600 rounded-full;
+            }
+            ::-webkit-scrollbar-track {
+                @apply bg-transparent;
+            }
+        }
+        @layer components {
+            /* أنماط الأزرار الرئيسية */
+            .btn-primary {
+                @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-200 disabled:opacity-50;
+            }
+            .btn-secondary {
+                @apply bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-200 disabled:opacity-50;
+            }
+            .btn-danger {
+                @apply bg-red-600 text-white hover:bg-red-700 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-200 disabled:opacity-50;
+            }
+            
+            /* أنماط حقول الإدخال */
+            .input-field {
+                @apply bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500;
+            }
+
+            /* بطاقة المنتج */
+            .product-card {
+                @apply bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl;
+            }
+
+            /* Modal (نافذة منبثقة) */
+            .modal-backdrop {
+                @apply fixed inset-0 z-40 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity;
+            }
+            .modal-content {
+                @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+            }
+            .modal-box {
+                @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6;
+            }
+        }
+    </style>
+    
+    <style>
+        /* تعريف متغيرات الألوان للثيمات */
+        :root {
+            --color-primary-50: 239, 246, 255;  /* blue-50 */
+            --color-primary-100: 219, 234, 254; /* blue-100 */
+            --color-primary-200: 191, 219, 254; /* blue-200 */
+            --color-primary-300: 147, 197, 253; /* blue-300 */
+            --color-primary-400: 96, 165, 250;  /* blue-400 */
+            --color-primary-500: 59, 130, 246;  /* blue-500 */
+            --color-primary-600: 37, 99, 235;   /* blue-600 */
+            --color-primary-700: 29, 78, 216;   /* blue-700 */
+            --color-primary-800: 30, 64, 175;   /* blue-800 */
+            --color-primary-900: 30, 58, 138;   /* blue-900 */
+        }
+        .theme-light-blue {
+            --color-primary-50: 236, 254, 255;  /* cyan-50 */
+            --color-primary-100: 207, 250, 254; /* cyan-100 */
+            --color-primary-200: 165, 242, 252; /* cyan-200 */
+            --color-primary-300: 103, 232, 249; /* cyan-300 */
+            --color-primary-400: 34, 211, 238;  /* cyan-400 */
+            --color-primary-500: 6, 182, 212;   /* cyan-500 */
+            --color-primary-600: 8, 145, 178;   /* cyan-600 */
+            --color-primary-700: 14, 116, 144;  /* cyan-700 */
+            --color-primary-800: 21, 94, 117;   /* cyan-800 */
+            --color-primary-900: 23, 78, 99;    /* cyan-900 */
+        }
+        .theme-yellow {
+            --color-primary-50: 254, 252, 232;  /* yellow-50 */
+            --color-primary-100: 254, 249, 195; /* yellow-100 */
+            --color-primary-200: 254, 240, 138; /* yellow-200 */
+            --color-primary-300: 253, 224, 71;  /* yellow-300 */
+            --color-primary-400: 250, 204, 21;  /* yellow-400 */
+            --color-primary-500: 234, 179, 8;   /* yellow-500 */
+            --color-primary-600: 202, 138, 4;   /* yellow-600 */
+            --color-primary-700: 161, 98, 7;    /* yellow-700 */
+            --color-primary-800: 133, 77, 14;   /* yellow-800 */
+            --color-primary-900: 113, 63, 18;   /* yellow-900 */
+        }
+        .theme-apple-green {
+            --color-primary-50: 247, 254, 231;  /* lime-50 */
+            --color-primary-100: 236, 252, 203; /* lime-100 */
+            --color-primary-200: 217, 249, 157; /* lime-200 */
+            --color-primary-300: 190, 242, 100; /* lime-300 */
+            --color-primary-400: 163, 230, 53;  /* lime-400 */
+            --color-primary-500: 132, 204, 22;  /* lime-500 */
+            --color-primary-600: 101, 163, 13;  /* lime-600 */
+            --color-primary-700: 77, 124, 15;   /* lime-700 */
+            --color-primary-800: 63, 98, 18;    /* lime-800 */
+            --color-primary-900: 54, 83, 20;    /* lime-900 */
+        }
+        .theme-dark-gold {
+            --color-primary-50: 252, 251, 242;
+            --color-primary-100: 248, 243, 220;
+            --color-primary-200: 240, 230, 188;
+            --color-primary-300: 230, 212, 148;
+            --color-primary-400: 218, 189, 103;
+            --color-primary-500: 202, 163, 71;  /* Gold */
+            --color-primary-600: 181, 138, 59;
+            --color-primary-700: 154, 110, 49;
+            --color-primary-800: 131, 89, 42;
+            --color-primary-900: 113, 73, 37;
+        }
+
+        /* تمكين الوضع المظلم بناءً على تفضيل النظام أو يمكننا فرضه */
+        :root {
+            color-scheme: dark;
+        }
+        html.dark {
+            color-scheme: dark;
+        }
+        body {
+            /* افتراضياً نستخدم الوضع المظلم */
+            @apply bg-gray-900 text-gray-100;
+        }
+    </style>
+</head>
+
+<body class="antialiased">
+
+    <!-- الحاوية الرئيسية للتطبيق -->
+    <div id="app-root" class="min-h-screen">
+        <!-- سيتم حقن المحتوى هنا بواسطة JavaScript -->
+    </div>
+
+    <!-- زر واتساب العائم -->
+    <div id="whatsapp-button-container"></div>
+
+    <!-- بيانات التطبيق (بديل لـ package.json) -->
+    <script type="application/json" id="package-metadata">
+    {
+        "name": "single-file-ecommerce-app",
+        "version": "1.1.0",
+        "description": "Integrated E-commerce Store in a single HTML file (Bugfix release).",
+        "author": "Full-Stack Senior Engineer (Gemini)",
+        "dependencies": {
+            "tailwindcss": "CDN",
+            "@supabase/supabase-js": "CDN",
+            "cloudinary-upload-widget": "CDN",
+            "lucide": "CDN"
+        }
+    }
+    </script>
+
+
+    <!-- =================================================================== -->
+    <!--             🚀 منطق التطبيق بالكامل (JavaScript) 🚀              -->
+    <!-- =================================================================== -->
+    <script type="module">
+        
+        // --- 1. الإعدادات الأولية والمكتبات ---
+        
+        // استيراد Supabase
+        const { createClient } = supabase;
+        
+        // متغيرات عملاء API (سيتم تهيئتها لاحقاً)
+        let supabaseClient = null;
+
+        // --- 2. إدارة الحالة (State Management) ---
+        
+        const AppState = {
+            // الحالة الافتراضية الأولية
+            _state: {
+                currentView: 'loading', // 'loading', 'login', 'store', 'admin', 'settings'
+                user: null, // { id, email, role }
+                products: [], // [ { id, name, description, price, stock, image_url } ]
+                cart: [], // [ { productId, name, price, quantity } ]
+                settings: {
+                    lang: 'ar',
+                    theme: 'theme-dark-blue', // الفئة الافتراضية
+                    apiKeys: {
+                        supabaseUrl: '',
+                        supabaseKey: '',
+                        cloudinaryCloudName: '',
+                        cloudinaryUploadPreset: '',
+                        openRouterKey: '',
+                        whatsappNumber: '' // رقم واتساب مع رمز الدولة e.g. 970xxxxxxxxx
+                    }
+                },
+                isLoading: false,
+                errorMessage: null,
+                currentModal: null, // 'cart', 'editProduct', null
+                productToEdit: null // لتخزين المنتج عند التعديل
+            },
+
+            // مستمعون لتغيير الحالة
+            _listeners: new Set(),
+
+            // دالة للحصول على الحالة الحالية (للقراءة فقط)
+            get state() {
+                return this._state;
+            },
+
+            // دالة لتحديث الحالة (ستقوم بتشغيل إعادة العرض)
+            setState(newState) {
+                // دمج الحالة القديمة مع الجديدة
+                this._state = { ...this._state, ...newState };
+                
+                // إخطار جميع المستمعين (في حالتنا، هو مستمع واحد: renderApp)
+                this._listeners.forEach(listener => listener());
+            },
+
+            // دالة لإضافة مستمع
+            addListener(listener) {
+                this._listeners.add(listener);
+            },
+
+            // دالة لإزالة مستمع
+            removeListener(listener) {
+                this._listeners.delete(listener);
+            }
+        };
+
+        // --- 3. نظام الترجمة (i18n) ---
+
+        const translations = {
+            ar: {
+                appName: "المتجر المتكامل",
+                loading: "يتم التحميل...",
+                login: "تسجيل الدخول",
+                signup: "إنشاء حساب",
+                logout: "تسجيل الخروج",
+                email: "البريد الإلكتروني",
+                password: "كلمة المرور",
+                loginSuccess: "تم تسجيل الدخول بنجاح!",
+                signupSuccess: "تم إنشاء الحساب بنجاح! تحقق من بريدك الإلكتروني.",
+                errorOccurred: "حدث خطأ:",
+                store: "المتجر",
+                adminDashboard: "لوحة تحكم المدير",
+                settings: "الإعدادات",
+                back: "رجوع",
+                save: "حفظ",
+                apiKeys: "مفاتيح API",
+                apiKeysWarning: "تُحفظ المفاتيح في المتصفح محلياً (localStorage). لا تستخدم مفاتيح إنتاجية في بيئة غير موثوقة.",
+                supabaseUrl: "رابط Supabase URL",
+                supabaseKey: "مفتاح Supabase Anon",
+                cloudinaryCloudName: "اسم سحابة Cloudinary",
+                cloudinaryUploadPreset: "إعداد الرفع المسبق (Preset)",
+                openRouterKey: "مفتاح OpenRouter API",
+                whatsappNumber: "رقم WhatsApp (مع رمز الدولة)",
+                language: "اللغة",
+                theme: "الثيم",
+                themeDarkBlue: "أزرق غامق",
+                themeLightBlue: "أزرق فاتح",
+                themeYellow: "أصفر",
+                themeAppleGreen: "أخضر تفاحي",
+                themeDarkGold: "ذهبي غامق",
+                settingsSaved: "تم حفظ الإعدادات.",
+                keysMissing: "مفاتيح Supabase مطلوبة لبدء تشغيل التطبيق.",
+                welcome: "مرحباً",
+                myCart: "سلتي",
+                products: "المنتجات",
+                price: "السعر",
+                stock: "المخزون",
+                addToCart: "أضف للسلة",
+                checkout: "إتمام الشراء",
+                total: "الإجمالي",
+                emptyCart: "سلة المشتريات فارغة.",
+                admin: "المدير",
+                viewStore: "عرض المتجر",
+                manageProducts: "إدارة المنتجات",
+                aiTools: "أدوات الذكاء الصناعي",
+                addNewProduct: "إضافة منتج جديد",
+                editProduct: "تعديل المنتج",
+                deleteProduct: "حذف المنتج",
+                productName: "اسم المنتج",
+                productDescription: "وصف المنتج",
+                productPrice: "السعر",
+                productStock: "المخزون",
+                productImage: "صورة المنتج",
+                uploadImage: "رفع صورة",
+                generateDescription: "إنشاء وصف (AI)",
+                generating: "جاري الإنشاء...",
+                deleteConfirm: "هل أنت متأكد من حذف هذا المنتج؟",
+                productAdded: "تمت إضافة المنتج بنجاح.",
+                productUpdated: "تم تحديث المنتج بنجاح.",
+                productDeleted: "تم حذف المنتج بنجاح.",
+                contactSupport: "تواصل مع الدعم",
+                dashboard: "لوحة التحكم",
+                sh: "₪" // رمز العملة (مثال: شيكل)
+            },
+            en: {
+                appName: "Integrated Store",
+                loading: "Loading...",
+                login: "Login",
+                signup: "Sign Up",
+                logout: "Logout",
+                email: "Email",
+                password: "Password",
+                loginSuccess: "Logged in successfully!",
+                signupSuccess: "Account created! Check your email for verification.",
+                errorOccurred: "An error occurred:",
+                store: "Store",
+                adminDashboard: "Admin Dashboard",
+                settings: "Settings",
+                back: "Back",
+                save: "Save",
+                apiKeys: "API Keys",
+                apiKeysWarning: "Keys are saved locally (localStorage). Do not use production keys in an untrusted environment.",
+                supabaseUrl: "Supabase URL",
+                supabaseKey: "Supabase Anon Key",
+                cloudinaryCloudName: "Cloudinary Cloud Name",
+                cloudinaryUploadPreset: "Cloudinary Upload Preset",
+                openRouterKey: "OpenRouter API Key",
+                whatsappNumber: "WhatsApp Number (with country code)",
+                language: "Language",
+                theme: "Theme",
+                themeDarkBlue: "Dark Blue",
+                themeLightBlue: "Light Blue",
+                themeYellow: "Yellow",
+                themeAppleGreen: "Apple Green",
+                themeDarkGold: "Dark Gold",
+                settingsSaved: "Settings saved.",
+                keysMissing: "Supabase keys are required to start the app.",
+                welcome: "Welcome",
+                myCart: "My Cart",
+                products: "Products",
+                price: "Price",
+                stock: "Stock",
+                addToCart: "Add to Cart",
+                checkout: "Checkout",
+                total: "Total",
+                emptyCart: "Your cart is empty.",
+                admin: "Admin",
+                viewStore: "View Store",
+                manageProducts: "Manage Products",
+                aiTools: "AI Tools",
+                addNewProduct: "Add New Product",
+                editProduct: "Edit Product",
+                deleteProduct: "Delete Product",
+                productName: "Product Name",
+                productDescription: "Product Description",
+                productPrice: "Price",
+                productStock: "Stock",
+                productImage: "Product Image",
+                uploadImage: "Upload Image",
+                generateDescription: "Generate Description (AI)",
+                generating: "Generating...",
+                deleteConfirm: "Are you sure you want to delete this product?",
+                productAdded: "Product added successfully.",
+                productUpdated: "Product updated successfully.",
+                productDeleted: "Product deleted successfully.",
+                contactSupport: "Contact Support",
+                dashboard: "Dashboard",
+                sh: "$" // Currency
+            },
+            he: {
+                appName: "חנות משולבת",
+                loading: "טוען...",
+                login: "התחברות",
+                signup: "הרשמה",
+                logout: "התנתקות",
+                email: "אימייל",
+                password: "סיסמה",
+                loginSuccess: "התחברת בהצלחה!",
+                signupSuccess: "חשבון נוצר! בדוק את האימייל שלך לאימות.",
+                errorOccurred: "אירעה שגיאה:",
+                store: "חנות",
+                adminDashboard: "לוח ניהול",
+                settings: "הגדרות",
+                back: "חזור",
+                save: "שמור",
+                apiKeys: "מפתחות API",
+                apiKeysWarning: "מפתחות נשמרים מקומית (localStorage). אל תשתמש במפתחות ייצור בסביבה לא מהימנה.",
+                supabaseUrl: "Supabase URL",
+                supabaseKey: "Supabase Anon Key",
+                cloudinaryCloudName: "Cloudinary Cloud Name",
+                cloudinaryUploadPreset: "Cloudinary Upload Preset",
+                openRouterKey: "OpenRouter API Key",
+                whatsappNumber: "מספר WhatsApp (עם קידומת מדינה)",
+                language: "שפה",
+                theme: "ערכת נושא",
+                themeDarkBlue: "כחול כהה",
+                themeLightBlue: "תכלת",
+                themeYellow: "צהוב",
+                themeAppleGreen: "ירוק תפוח",
+                themeDarkGold: "זהב כהה",
+                settingsSaved: "ההגדרות נשמרו.",
+                keysMissing: "נדרשים מפתחות Supabase להפעלת האפליקציה.",
+                welcome: "ברוך הבא",
+                myCart: "העגלה שלי",
+                products: "מוצרים",
+                price: "מחיר",
+                stock: "מלאי",
+                addToCart: "הוסף לעגלה",
+                checkout: "לתשלום",
+                total: "סך הכל",
+                emptyCart: "העגלה שלך ריקה.",
+                admin: "מנהל",
+                viewStore: "צפה בחנות",
+                manageProducts: "נהל מוצרים",
+                aiTools: "כלי AI",
+                addNewProduct: "הוסף מוצר חדש",
+                editProduct: "ערוך מוצר",
+                deleteProduct: "מחק מוצר",
+                productName: "שם המוצר",
+                productDescription: "תיאור המוצר",
+                productPrice: "מחיר",
+                productStock: "מלאי",
+                productImage: "תמונת מוצר",
+                uploadImage: "העלה תמונה",
+                generateDescription: "צור תיאור (AI)",
+                generating: "יוצר...",
+                deleteConfirm: "האם אתה בטוח שברצונך למחוק מוצר זה?",
+                productAdded: "המוצר נוסף בהצלחה.",
+                productUpdated: "המוצר עודכן בהצלחה.",
+                productDeleted: "המוצר נמחק בהצלחה.",
+                contactSupport: "צור קשר עם התמיכה",
+                dashboard: "לוח בקרה",
+                sh: "₪" // Currency
+            }
+        };
+
+        // دالة مساعدة للترجمة
+        function t(key) {
+            return translations[AppState.state.settings.lang][key] || key;
+        }
+
+        // --- 4. معالجات API والخدمات ---
+
+        // 4.1. إعدادات المستخدم (localStorage)
+        const SETTINGS_KEY = 'ecommerce_app_settings';
+
+        function saveSettings() {
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(AppState.state.settings));
+                showToast(t('settingsSaved'), 'success');
+                // إعادة تهيئة الخدمات بالمفاتيح الجديدة
+                initServices();
+            } catch (error) {
+                console.error("Error saving settings:", error);
+                showToast(t('errorOccurred') + ` ${error.message}`, 'error');
+            }
+        }
+
+        function loadSettings() {
+            try {
+                const savedSettings = localStorage.getItem(SETTINGS_KEY);
+                if (savedSettings) {
+                    const parsedSettings = JSON.parse(savedSettings);
+                    // دمج الإعدادات المحفوظة مع الافتراضية لضمان وجود جميع المفاتيح
+                    const defaultSettings = AppState.state.settings;
+                    const mergedSettings = {
+                        ...defaultSettings,
+                        ...parsedSettings,
+                        apiKeys: {
+                            ...defaultSettings.apiKeys,
+                            ...parsedSettings.apiKeys
+                        }
+                    };
+                    AppState.setState({ settings: mergedSettings });
+                }
+            } catch (error) {
+                console.error("Error loading settings:", error);
+                // إذا حدث خطأ، استخدم الافتراضيات
+            }
+        }
+
+        // 4.2. تهيئة الخدمات (Supabase)
+        function initServices() {
+            const { supabaseUrl, supabaseKey } = AppState.state.settings.apiKeys;
+            
+            // تحقق من وجود المفاتيح
+            if (!supabaseUrl || !supabaseKey) {
+                console.warn("Supabase keys are missing.");
+                // إذا كنا لسنا في صفحة الإعدادات أو تسجيل الدخول، انقلنا إلى الإعدادات
+                if (AppState.state.currentView !== 'settings' && AppState.state.currentView !== 'login') {
+                    // لا تقم بتعيين رسالة خطأ، فقط قم بالتوجيه
+                    AppState.setState({ currentView: 'settings' });
+                }
+                return false; // فشل التهيئة
+            }
+
+            // تهيئة Supabase
+            try {
+                // (تحسين) لا تقم بإنشاء عميل جديد إذا كان موجوداً ولم تتغير المفاتيح
+                if (!supabaseClient || supabaseClient.supabaseUrl !== supabaseUrl || supabaseClient.supabaseKey !== supabaseKey) {
+                    
+                    supabaseClient = createClient(supabaseUrl, supabaseKey);
+                    
+                    // إعداد مستمع تغيير حالة المصادقة
+                    supabaseClient.auth.onAuthStateChange((event, session) => {
+                        handleAuthStateChange(session);
+                    });
+                }
+                
+                // التحقق من الجلسة الحالية
+                supabaseClient.auth.getSession().then(({ data }) => {
+                    handleAuthStateChange(data.session);
+                });
+
+                return true; // نجاح التهيئة
+            } catch (error) {
+                console.error("Error initializing Supabase:", error);
+                // هذا خطأ حقيقي (مثل مفاتيح غير صالحة)
+                AppState.setState({ errorMessage: t('errorOccurred') + ` ${error.message}` });
+                return false;
+            }
+        }
+
+        // 4.3. معالجة المصادقة
+        async function handleAuthStateChange(session) {
+            if (session) {
+                // المستخدم مسجل دخوله
+                const user = session.user;
+                // الأدوار (Roles) تُخزن عادة في user_metadata
+                // نحن نفترض أن المدير (admin) لديه role = 'admin' في metadata
+                const userRole = user.user_metadata?.role || 'shopper'; 
+                
+                AppState.setState({ 
+                    user: { id: user.id, email: user.email, role: userRole },
+                    currentView: userRole === 'admin' ? 'admin' : 'store',
+                    isLoading: false,
+                    errorMessage: null
+                });
+                
+                // إذا كان المستخدم مسجلاً، قم بجلب المنتجات
+                if (AppState.state.currentView === 'store' || AppState.state.currentView === 'admin') {
+                    fetchProducts();
+                }
+            } else {
+                // لا يوجد مستخدم (تم تسجيل الخروج)
+                AppState.setState({ 
+                    user: null, 
+                    currentView: 'login', // العودة إلى تسجيل الدخول
+                    products: [],
+                    cart: [],
+                    isLoading: false,
+                    errorMessage: null
+                });
+            }
+        }
+        
+        async function handleLogin(email, password) {
+            if (!supabaseClient) return initServices();
+            AppState.setState({ isLoading: true, errorMessage: null });
+            try {
+                const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) throw error;
+                // onAuthStateChange سيتولى الباقي
+            } catch (error) {
+                console.error("Login error:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+
+        async function handleSignup(email, password) {
+            if (!supabaseClient) return initServices();
+            AppState.setState({ isLoading: true, errorMessage: null });
+            try {
+                const { error } = await supabaseClient.auth.signUp({ 
+                    email, 
+                    password,
+                    options: {
+                        // تعيين الدور الافتراضي كـ "متسوق"
+                        data: { 
+                            role: 'shopper' 
+                        }
+                    }
+                });
+                if (error) throw error;
+                showToast(t('signupSuccess'), 'success');
+                AppState.setState({ isLoading: false, errorMessage: null });
+            } catch (error) {
+                console.error("Signup error:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+
+        async function handleLogout() {
+            if (!supabaseClient) return;
+            AppState.setState({ isLoading: true });
+            try {
+                const { error } = await supabaseClient.auth.signOut();
+                if (error) throw error;
+                // onAuthStateChange سيتولى الباقي
+            } catch (error) {
+                console.error("Logout error:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+
+        // 4.4. معالجة المنتجات (Supabase DB)
+        // (نفترض وجود جدول 'products' في Supabase)
+        async function fetchProducts() {
+            if (!supabaseClient) return;
+            AppState.setState({ isLoading: true });
+            try {
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*');
+                
+                if (error) throw error;
+                
+                AppState.setState({ products: data || [], isLoading: false });
+            } catch (error) {
+                console.error("Error fetching products:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+        
+        async function addProduct(productData) {
+            if (!supabaseClient) return;
+            AppState.setState({ isLoading: true });
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .insert([productData]); // يجب أن يكون كائن داخل مصفوفة
+                
+                if (error) throw error;
+                
+                showToast(t('productAdded'), 'success');
+                AppState.setState({ isLoading: false, currentModal: null });
+                fetchProducts(); // إعادة جلب المنتجات
+            } catch (error) {
+                console.error("Error adding product:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+
+        async function updateProduct(productId, productData) {
+            if (!supabaseClient) return;
+            AppState.setState({ isLoading: true });
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .update(productData)
+                    .eq('id', productId);
+                
+                if (error) throw error;
+                
+                showToast(t('productUpdated'), 'success');
+                AppState.setState({ isLoading: false, currentModal: null, productToEdit: null });
+                fetchProducts(); // إعادة جلب المنتجات
+            } catch (error) {
+                console.error("Error updating product:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+
+        async function deleteProduct(productId) {
+            // استخدام تأكيد بسيط قبل الحذف
+            if (!window.confirm(t('deleteConfirm'))) return;
+
+            if (!supabaseClient) return;
+            AppState.setState({ isLoading: true });
+            try {
+                const { error } = await supabaseClient
+                    .from('products')
+                    .delete()
+                    .eq('id', productId);
+                
+                if (error) throw error;
+                
+                showToast(t('productDeleted'), 'success');
+                AppState.setState({ isLoading: false });
+                fetchProducts(); // إعادة جلب المنتجات
+            } catch (error) {
+                console.error("Error deleting product:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+            }
+        }
+
+        // 4.5. خدمة Cloudinary (Upload Widget)
+        function openCloudinaryWidget(onSuccess) {
+            const { cloudinaryCloudName, cloudinaryUploadPreset } = AppState.state.settings.apiKeys;
+            
+            if (!cloudinaryCloudName || !cloudinaryUploadPreset) {
+                showToast(t('keysMissing'), 'error');
+                AppState.setState({ currentView: 'settings' }); // لا تقم بتعيين رسالة خطأ، فقط وجه
+                return;
+            }
+
+            const widget = window.cloudinary.createUploadWidget({
+                cloudName: cloudinaryCloudName,
+                uploadPreset: cloudinaryUploadPreset,
+                cropping: true,
+                multiple: false,
+                folder: "ecommerce-store"
+            }, (error, result) => {
+                if (!error && result && result.event === "success") {
+                    console.log('Cloudinary Success:', result.info);
+                    onSuccess(result.info.secure_url); // استدعاء الكولباك مع الرابط الآمن
+                } else if (error) {
+                    console.error("Cloudinary Error:", error);
+                    showToast(t('errorOccurred') + ` ${error.message}`, 'error');
+                }
+            });
+            
+            widget.open(); // فتح نافذة الرفع
+        }
+
+        // 4.6. خدمة OpenRouter (AI)
+        async function generateAIProductDescription(productName) {
+            const { openRouterKey } = AppState.state.settings.apiKeys;
+            
+            if (!openRouterKey) {
+                showToast(t('keysMissing'), 'error');
+                AppState.setState({ currentView: 'settings' }); // لا تقم بتعيين رسالة خطأ، فقط وجه
+                return null;
+            }
+
+            AppState.setState({ isLoading: true });
+            
+            const prompt = `Write a short, enticing, and professional e-commerce product description for: "${productName}". Focus on benefits and appeal. Maximum 3 sentences. Language: ${AppState.state.settings.lang}`;
+
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${openRouterKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'openai/gpt-3.5-turbo', // يمكن تغييره لأي موديل
+                        messages: [
+                            { role: 'system', content: 'You are an expert e-commerce copywriter.' },
+                            { role: 'user', content: prompt }
+                        ]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'OpenRouter API error');
+                }
+                
+                const data = await response.json();
+                const description = data.choices[0].message.content.trim();
+                
+                AppState.setState({ isLoading: false });
+                return description;
+
+            } catch (error) {
+                console.error("OpenRouter Error:", error);
+                AppState.setState({ isLoading: false, errorMessage: t('errorOccurred') + ` ${error.message}` });
+                return null;
+            }
+        }
+        
+        // 4.7. سلة المشتريات (Cart Logic)
+        function addToCart(productId) {
+            const { products, cart } = AppState.state;
+            const product = products.find(p => p.id === productId);
+            
+            if (!product || product.stock <= 0) return; // لا يمكن إضافة منتج غير موجود أو نفد مخزونه
+            
+            const existingItemIndex = cart.findIndex(item => item.productId === productId);
+            let newCart = [...cart];
+
+            if (existingItemIndex > -1) {
+                // زيادة الكمية إذا كان المنتج موجوداً بالفعل
+                newCart[existingItemIndex].quantity += 1;
+            } else {
+                // إضافة منتج جديد للسلة
+                newCart.push({
+                    productId: product.id,
+                    name: product.name,
+                    price: product.price,
+                    imageUrl: product.image_url,
+                    quantity: 1
+                });
+            }
+            
+            AppState.setState({ cart: newCart });
+            showToast(`${product.name} ${t('addToCart')}`, 'success');
+        }
+
+        function removeFromCart(productId) {
+             let newCart = AppState.state.cart.filter(item => item.productId !== productId);
+             AppState.setState({ cart: newCart });
+        }
+        
+        function updateCartQuantity(productId, quantity) {
+            let newCart = [...AppState.state.cart];
+            const itemIndex = newCart.findIndex(item => item.productId === productId);
+            if (itemIndex > -1) {
+                if (quantity <= 0) {
+                    // إزالة المنتج إذا كانت الكمية 0 أو أقل
+                    newCart.splice(itemIndex, 1);
+                } else {
+                    // (يجب التحقق من المخزون هنا)
+                    newCart[itemIndex].quantity = quantity;
+                }
+                AppState.setState({ cart: newCart });
+            }
+        }
+
+
+        // --- 5. مكونات العرض (Render Components) ---
+
+        // 5.1. مكونات مساعدة
+        
+        // مكون التحميل
+        function renderLoading() {
+            return `
+                <div class="flex items-center justify-center min-h-screen">
+                    <svg class="animate-spin h-10 w-10 text-primary-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="ms-3 text-lg font-medium">${t('loading')}</span>
+                </div>
+            `;
+        }
+        
+        // مكون رسالة خطأ
+        function renderErrorMessage() {
+            if (!AppState.state.errorMessage) return '';
+            return `
+                <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-900 dark:text-red-300" role="alert">
+                    <span class="font-medium">${t('errorOccurred')}</span> ${AppState.state.errorMessage}
+                </div>
+            `;
+        }
+
+        // مكون Toast (رسالة منبثقة)
+        function showToast(message, type = 'info') {
+            const toastId = `toast-${Date.now()}`;
+            const colors = {
+                info: 'bg-blue-600',
+                success: 'bg-green-600',
+                error: 'bg-red-600'
+            };
+            
+            const toastElement = document.createElement('div');
+            toastElement.id = toastId;
+            toastElement.className = `fixed bottom-5 end-5 p-4 rounded-lg text-white shadow-lg z-[100] transition-all duration-300 translate-x-full ${colors[type]}`;
+            toastElement.innerHTML = `<span>${message}</span>`;
+            
+            document.body.appendChild(toastElement);
+            
+            // إظهار
+            setTimeout(() => {
+                toastElement.classList.remove('translate-x-full');
+                toastElement.classList.add('translate-x-0');
+            }, 100); // تأخير بسيط للتحريك
+            
+            // إخفاء
+            setTimeout(() => {
+                toastElement.classList.add('translate-x-full');
+                toastElement.classList.remove('translate-x-0');
+                // إزالة العنصر بعد انتهاء التحريك
+                setTimeout(() => {
+                    toastElement.remove();
+                }, 300);
+            }, 3000); // إخفاء بعد 3 ثوانٍ
+        }
+
+        // 5.2. مكونات الواجهة الرئيسية
+        
+        // --- واجهة تسجيل الدخول (Login View) ---
+        function renderLoginView() {
+            return `
+                <div class="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-screen lg:py-0">
+                    <a href="#" class="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white">
+                        <i data-lucide="shopping-bag" class="w-8 h-8 me-2 text-primary-500"></i>
+                        ${t('appName')}
+                    </a>
+                    <div class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+                        <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+                            <h1 class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
+                                ${t('login')}
+                            </h1>
+                            ${renderErrorMessage()}
+                            <form id="login-form" class="space-y-4 md:space-y-6">
+                                <div>
+                                    <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">${t('email')}</label>
+                                    <input type="email" name="email" id="email" class="input-field" placeholder="name@company.com" required>
+                                </div>
+                                <div>
+                                    <label for="password" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">${t('password')}</label>
+                                    <input type="password" name="password" id="password" placeholder="••••••••" class="input-field" required>
+                                </div>
+                                <div class="flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3 rtl:sm:space-x-reverse">
+                                    <button type="submit" data-action="login-submit" class="w-full btn-primary">
+                                        ${AppState.state.isLoading ? t('loading') : t('login')}
+                                    </button>
+                                    <button type="button" data-action="signup-submit" class="w-full btn-secondary">
+                                        ${AppState.state.isLoading ? t('loading') : t('signup')}
+                                    </button>
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" data-action="go-to-settings" class="text-sm font-medium text-primary-500 hover:underline">
+                                        ${t('settings')}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- واجهة الإعدادات (Settings View) ---
+        function renderSettingsView() {
+            const { settings } = AppState.state;
+            const keys = settings.apiKeys;
+            // التحقق من مفاتيح Supabase على وجه التحديد
+            const keysAreMissing = !keys.supabaseUrl || !keys.supabaseKey;
+
+            return `
+                <div class="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-screen lg:py-0">
+                    <a href="#" class="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white">
+                        <i data-lucide="settings" class="w-8 h-8 me-2 text-primary-500"></i>
+                        ${t('settings')}
+                    </a>
+                    <div class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-2xl xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+                        <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+                            
+                            <!-- عرض الأخطاء الحقيقية (مثل فشل الاتصال) -->
+                            ${renderErrorMessage()}
+
+                            <!-- عرض تنبيه إرشادي إذا كانت المفاتيح مفقودة (وليس خطأ) -->
+                            ${keysAreMissing && !AppState.state.errorMessage ? `
+                                <div class="p-4 mb-4 text-sm text-blue-700 bg-blue-100 rounded-lg dark:bg-blue-900 dark:text-blue-300" role="alert">
+                                    <span class="font-medium">${t('keysMissing')}</span>
+                                </div>
+                            ` : ''}
+
+                            <form id="settings-form" class="space-y-4">
+                                
+                                <!-- إعدادات اللغة والثيم -->
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="lang-select" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">${t('language')}</label>
+                                        <select id="lang-select" name="lang" class="input-field">
+                                            <option value="ar" ${settings.lang === 'ar' ? 'selected' : ''}>العربية (Arabic)</option>
+                                            <option value="en" ${settings.lang === 'en' ? 'selected' : ''}>English</option>
+                                            <option value="he" ${settings.lang === 'he' ? 'selected' : ''}>עברית (Hebrew)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="theme-select" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">${t('theme')}</label>
+                                        <select id="theme-select" name="theme" class="input-field">
+                                            <option value="theme-dark-blue" ${settings.theme === 'theme-dark-blue' ? 'selected' : ''}>${t('themeDarkBlue')}</option>
+                                            <option value="theme-light-blue" ${settings.theme === 'theme-light-blue' ? 'selected' : ''}>${t('themeLightBlue')}</option>
+                                            <option value="theme-yellow" ${settings.theme === 'theme-yellow' ? 'selected' : ''}>${t('themeYellow')}</option>
+                                            <option value="theme-apple-green" ${settings.theme === 'theme-apple-green' ? 'selected' : ''}>${t('themeAppleGreen')}</option>
+                                            <option value="theme-dark-gold" ${settings.theme === 'theme-dark-gold' ? 'selected' : ''}>${t('themeDarkGold')}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- مفاتيح API -->
+                                <h3 class="text-lg font-semibold dark:text-white">${t('apiKeys')}</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">${t('apiKeysWarning')}</p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label for="supabaseUrl" class="block mb-2 text-sm font-medium">${t('supabaseUrl')}</label>
+                                        <input type="text" name="supabaseUrl" id="supabaseUrl" class="input-field" value="${keys.supabaseUrl}" placeholder="https://xyz.supabase.co">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label for="supabaseKey" class="block mb-2 text-sm font-medium">${t('supabaseKey')}</label>
+                                        <input type="password" name="supabaseKey" id="supabaseKey" class="input-field" value="${keys.supabaseKey}" placeholder="eyJ...">
+                                    </div>
+                                    <div>
+                                        <label for="cloudinaryCloudName" class="block mb-2 text-sm font-medium">${t('cloudinaryCloudName')}</label>
+                                        <input type="text" name="cloudinaryCloudName" id="cloudinaryCloudName" class="input-field" value="${keys.cloudinaryCloudName}" placeholder="your-cloud-name">
+                                    </div>
+                                    <div>
+                                        <label for="cloudinaryUploadPreset" class="block mb-2 text-sm font-medium">${t('cloudinaryUploadPreset')}</label>
+                                        <input type="text" name="cloudinaryUploadPreset" id="cloudinaryUploadPreset" class="input-field" value="${keys.cloudinaryUploadPreset}" placeholder="your-preset-name">
+                                    </div>
+                                    <div>
+                                        <label for="openRouterKey" class="block mb-2 text-sm font-medium">${t('openRouterKey')}</label>
+                                        <input type="password" name="openRouterKey" id="openRouterKey" class="input-field" value="${keys.openRouterKey}" placeholder="sk-or-...">
+                                    </div>
+                                    <div>
+                                        <label for="whatsappNumber" class="block mb-2 text-sm font-medium">${t('whatsappNumber')}</label>
+                                        <input type="text" name="whatsappNumber" id="whatsappNumber" class="input-field" value="${keys.whatsappNumber}" placeholder="97259xxxxxxx">
+                                    </div>
+                                </div>
+
+                                <div class="flex space-x-3 rtl:space-x-reverse pt-4">
+                                    <button type="submit" data-action="save-settings" class="btn-primary">
+                                        ${t('save')}
+                                    </button>
+                                    <button type="button" data-action="back-from-settings" class="btn-secondary">
+                                        ${t('back')}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // --- النافبار العام (Navbar) ---
+        function renderNavbar() {
+            const { user } = AppState.state;
+            const isAdmin = user?.role === 'admin';
+            
+            return `
+                <nav class="bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700 shadow-sm sticky top-0 z-30">
+                    <div class="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
+                        <a href="#" data-action="go-to-home" class="flex items-center space-x-3 rtl:space-x-reverse">
+                            <i data-lucide="shopping-bag" class="h-8 w-8 text-primary-500"></i>
+                            <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">${t('appName')}</span>
+                        </a>
+                        
+                        <div class="flex items-center space-x-2 md:space-x-3 rtl:space-x-reverse">
+                            <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">${t('welcome')}, ${user?.email || 'Guest'}</span>
+                            
+                            <!-- زر التبديل للوحة التحكم/المتجر -->
+                            ${isAdmin ? `
+                                <button type="button" data-action="${AppState.state.currentView === 'admin' ? 'go-to-store' : 'go-to-admin'}" class="p-2 text-gray-500 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                                    ${AppState.state.currentView === 'admin' ? `
+                                        <i data-lucide="store" class="w-5 h-5"></i>
+                                        <span class="sr-only">${t('viewStore')}</span>
+                                    ` : `
+                                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                                        <span class="sr-only">${t('adminDashboard')}</span>
+                                    `}
+                                </button>
+                            ` : ''}
+                            
+                            <!-- زر السلة (للمتسوق فقط) -->
+                            ${!isAdmin ? `
+                                <button type="button" data-action="open-cart" class="relative p-2 text-gray-500 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                                    <span class="sr-only">${t('myCart')}</span>
+                                    ${AppState.state.cart.length > 0 ? `
+                                        <span class="absolute -top-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">
+                                            ${AppState.state.cart.reduce((sum, item) => sum + item.quantity, 0)}
+                                        </span>
+                                    ` : ''}
+                                </button>
+                            ` : ''}
+
+                            <!-- زر الإعدادات -->
+                            <button type="button" data-action="go-to-settings" class="p-2 text-gray-500 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                                <i data-lucide="settings" class="w-5 h-5"></i>
+                                <span class="sr-only">${t('settings')}</span>
+                            </button>
+                            
+                            <!-- زر تسجيل الخروج -->
+                            <button type="button" data-action="logout" class="p-2 text-gray-500 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700">
+                                <i data-lucide="log-out" class="w-5 h-5"></i>
+                                <span class="sr-only">${t('logout')}</span>
+                            </button>
+                        </div>
+                    </div>
+                </nav>
+            `;
+        }
+
+        // --- واجهة المتجر (Storefront View) ---
+        function renderStorefrontView() {
+            const { products, isLoading } = AppState.state;
+            
+            return `
+                <div class="flex flex-col min-h-screen">
+                    ${renderNavbar()}
+                    
+                    <main class="flex-grow p-4 md:p-8 max-w-screen-xl mx-auto w-full">
+                        <h1 class="text-3xl font-bold dark:text-white mb-6">${t('products')}</h1>
+                        
+                        ${isLoading && products.length === 0 ? `
+                            <div class="text-center py-10">${t('loading')}</div>
+                        ` : ''}
+
+                        ${!isLoading && products.length === 0 ? `
+                            <div class="text-center py-10 text-gray-500 dark:text-gray-400">لا توجد منتجات لعرضها حالياً.</div>
+                        ` : ''}
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            ${products.map(product => `
+                                <div class="product-card">
+                                    <div class="relative w-full h-48">
+                                        <img src="${product.image_url || 'https://placehold.co/400x300/1e293b/94a3b8?text=No+Image'}" alt="${product.name}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="text-lg font-semibold dark:text-white">${product.name}</h3>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate" title="${product.description}">${product.description}</p>
+                                        <div class="flex items-center justify-between mt-4">
+                                            <span class="text-xl font-bold text-primary-500">${t('sh')}${product.price}</span>
+                                            <button 
+                                                data-action="add-to-cart" 
+                                                data-id="${product.id}" 
+                                                class="btn-primary px-3 py-1.5"
+                                                ${product.stock <= 0 ? 'disabled' : ''}>
+                                                <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </main>
+                    
+                    ${AppState.state.currentModal === 'cart' ? renderCartModal() : ''}
+                </div>
+            `;
+        }
+        
+        // --- نافذة السلة (Cart Modal) ---
+        function renderCartModal() {
+            const { cart } = AppState.state;
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            return `
+                <div class="modal-backdrop" data-action="close-modal"></div>
+                <div class="modal-content">
+                    <div class="modal-box">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold dark:text-white">${t('myCart')}</h3>
+                            <button data-action="close-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i data-lucide="x" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        
+                        ${cart.length === 0 ? `
+                            <p class="text-center text-gray-500 dark:text-gray-400 py-10">${t('emptyCart')}</p>
+                        ` : `
+                            <div class="space-y-4 max-h-[50vh] overflow-y-auto p-1">
+                                ${cart.map(item => `
+                                    <div class="flex items-center space-x-4 rtl:space-x-reverse">
+                                        <img src="${item.imageUrl || 'https://placehold.co/100x100'}" alt="${item.name}" class="w-16 h-16 rounded-lg object-cover">
+                                        <div class="flex-grow">
+                                            <h4 class="font-medium dark:text-white">${item.name}</h4>
+                                            <p class="text-sm text-gray-500 dark:text-gray-400">${t('sh')}${item.price}</p>
+                                        </div>
+                                        <div class="flex items-center space-x-2 rtl:space-x-reverse">
+                                            <input 
+                                                type="number" 
+                                                min="1" 
+                                                value="${item.quantity}" 
+                                                class="input-field w-16 text-center"
+                                                data-action="update-cart-quantity"
+                                                data-id="${item.productId}">
+                                            <button data-action="remove-from-cart" data-id="${item.productId}" class="text-red-500 hover:text-red-700 p-1">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            
+                            <div class="border-t dark:border-gray-700 mt-6 pt-4">
+                                <div class="flex justify-between items-center text-lg font-semibold">
+                                    <span class="dark:text-gray-300">${t('total')}:</span>
+                                    <span class="text-primary-500">${t('sh')}${total.toFixed(2)}</span>
+                                </div>
+                                <button data-action="checkout" class="btn-primary w-full mt-4">
+                                    ${t('checkout')}
+                                </button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- واجهة المدير (Admin View) ---
+        function renderAdminView() {
+            const { products, isLoading } = AppState.state;
+            
+            return `
+                <div class="flex flex-col min-h-screen">
+                    ${renderNavbar()}
+                    
+                    <main class="flex-grow p-4 md:p-8 max-w-screen-xl mx-auto w-full">
+                        <div class="flex items-center justify-between mb-6">
+                            <h1 class="text-3xl font-bold dark:text-white">${t('manageProducts')}</h1>
+                            <button data-action="open-add-product-modal" class="btn-primary flex items-center space-x-2 rtl:space-x-reverse">
+                                <i data-lucide="plus" class="w-5 h-5"></i>
+                                <span>${t('addNewProduct')}</span>
+                            </button>
+                        </div>
+                        
+                        ${isLoading && products.length === 0 ? `
+                            <div class="text-center py-10">${t('loading')}</div>
+                        ` : ''}
+                        
+                        <!-- جدول المنتجات -->
+                        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-x-auto">
+                            <table class="w-full min-w-max text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">${t('productName')}</th>
+                                        <th scope="col" class="px-6 py-3">${t('price')}</th>
+                                        <th scope="col" class="px-6 py-3">${t('stock')}</th>
+                                        <th scope="col" class="px-6 py-3 text-end">${t('actions')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${products.map(product => `
+                                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                            <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                                <div class="flex items-center space-x-3 rtl:space-x-reverse">
+                                                    <img src="${product.image_url || 'https://placehold.co/40x40'}" alt="${product.name}" class="w-10 h-10 rounded-md object-cover">
+                                                    <span>${product.name}</span>
+                                                </div>
+                                            </th>
+                                            <td class="px-6 py-4">${t('sh')}${product.price}</td>
+                                            <td class="px-6 py-4">${product.stock}</td>
+                                            <td class="px-6 py-4 text-end">
+                                                <div class="flex justify-end space-x-2 rtl:space-x-reverse">
+                                                    <button data-action="open-edit-product-modal" data-id="${product.id}" class="text-primary-500 hover:text-primary-700 p-1">
+                                                        <i data-lucide="edit" class="w-4 h-4"></i>
+                                                    </button>
+                                                    <button data-action="delete-product" data-id="${product.id}" class="text-red-500 hover:text-red-700 p-1">
+                                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${!isLoading && products.length === 0 ? `
+                                <p class="text-center text-gray-500 dark:text-gray-400 py-10">لم تتم إضافة أي منتجات بعد.</p>
+                            ` : ''}
+                        </div>
+                    </main>
+                    
+                    ${AppState.state.currentModal === 'editProduct' ? renderProductFormModal() : ''}
+                </div>
+            `;
+        }
+        
+        // --- نافذة إضافة/تعديل منتج ---
+        function renderProductFormModal() {
+            const { productToEdit } = AppState.state;
+            const isEditing = !!productToEdit;
+            
+            return `
+                <div class="modal-backdrop" data-action="close-modal"></div>
+                <div class="modal-content">
+                    <form id="product-form" class="modal-box">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-semibold dark:text-white">
+                                ${isEditing ? t('editProduct') : t('addNewProduct')}
+                            </h3>
+                            <button type="button" data-action="close-modal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <i data-lucide="x" class="w-6 h-6"></i>
+                            </button>
+                        </div>
+                        
+                        ${renderErrorMessage()}
+                        
+                        <input type="hidden" name="image_url" id="image_url" value="${productToEdit?.image_url || ''}">
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="name" class="block mb-2 text-sm font-medium">${t('productName')}</label>
+                                <input type="text" name="name" id="name" class="input-field" value="${productToEdit?.name || ''}" required>
+                            </div>
+                            
+                            <div>
+                                <label for="description" class="block mb-2 text-sm font-medium">${t('productDescription')}</label>
+                                <textarea name="description" id="description" rows="3" class="input-field">${productToEdit?.description || ''}</textarea>
+                                <button type="button" data-action="generate-description" class="text-xs btn-secondary px-2 py-1 mt-1 flex items-center space-x-1 rtl:space-x-reverse">
+                                    <i data-lucide="sparkles" class="w-3 h-3"></i>
+                                    <span>${t('generateDescription')}</span>
+                                </button>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="price" class="block mb-2 text-sm font-medium">${t('productPrice')}</label>
+                                    <input type="number" name="price" id="price" step="0.01" class="input-field" value="${productToEdit?.price || 0}" required>
+                                </div>
+                                <div>
+                                    <label for="stock" class="block mb-2 text-sm font-medium">${t('productStock')}</label>
+                                    <input type="number" name="stock" id="stock" class="input-field" value="${productToEdit?.stock || 0}" required>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block mb-2 text-sm font-medium">${t('productImage')}</label>
+                                <button type="button" data-action="upload-image" class="btn-secondary w-full flex items-center justify-center space-x-2 rtl:space-x-reverse">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                    <span>${t('uploadImage')}</span>
+                                </button>
+                                <img id="image-preview" src="${productToEdit?.image_url || ''}" class="${productToEdit?.image_url ? 'block' : 'hidden'} w-24 h-24 rounded-lg object-cover mt-2">
+                            </div>
+
+                        </div>
+                        
+                        <div class="border-t dark:border-gray-700 mt-6 pt-4 flex justify-end">
+                            <button type="submit" data-action="save-product" class="btn-primary">
+                                ${AppState.state.isLoading ? t('loading') : t('save')}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            `;
+        }
+
+        // --- زر واتساب العائم ---
+        function renderWhatsappButton() {
+            const { whatsappNumber } = AppState.state.settings.apiKeys;
+            if (!whatsappNumber || AppState.state.currentView === 'login' || AppState.state.currentView === 'settings') {
+                document.getElementById('whatsapp-button-container').innerHTML = '';
+                return;
+            }
+            
+            const message = encodeURIComponent(t('contactSupport'));
+            const waLink = `https://wa.me/${whatsappNumber.replace(/\+/g, '')}?text=${message}`;
+            
+            document.getElementById('whatsapp-button-container').innerHTML = `
+                <a href="${waLink}" target="_blank" rel="noopener noreferrer" 
+                   class="fixed bottom-6 end-6 z-30 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-transform hover:scale-110">
+                   <i data-lucide="message-circle" class="w-6 h-6" style="fill: white;"></i>
+                   <span class="sr-only">${t('contactSupport')}</span>
+                </a>
+            `;
+        }
+
+
+        // --- 6. العارض الرئيسي (Main Renderer) ---
+        
+        const root = document.getElementById('app-root');
+
+        function renderApp() {
+            // 1. تحديث إعدادات العرض (اللغة والثيم)
+            const { lang, theme } = AppState.state.settings;
+            document.documentElement.lang = lang;
+            document.documentElement.dir = ['ar', 'he'].includes(lang) ? 'rtl' : 'ltr';
+            // تطبيق الثيم (إزالة القديم وإضافة الجديد)
+            document.body.className.split(' ').forEach(cls => {
+                if (cls.startsWith('theme-')) {
+                    document.body.classList.remove(cls);
+                }
+            });
+            document.body.classList.add(theme);
+            
+            // 2. عرض الواجهة الحالية
+            const { currentView, isLoading } = AppState.state;
+            
+            if (currentView === 'loading' || (isLoading && !AppState.state.user && currentView !== 'settings')) {
+                root.innerHTML = renderLoading();
+            } else if (currentView === 'login') {
+                root.innerHTML = renderLoginView();
+            } else if (currentView === 'settings') {
+                root.innerHTML = renderSettingsView();
+            } else if (currentView === 'store') {
+                root.innerHTML = renderStorefrontView();
+            } else if (currentView === 'admin') {
+                root.innerHTML = renderAdminView();
+            } else {
+                // حالة افتراضية (fallback)
+                root.innerHTML = renderLoginView();
+            }
+            
+            // 3. عرض المكونات العائمة (واتساب)
+            renderWhatsappButton();
+
+            // 4. تفعيل الأيقونات
+            // (مهم: يجب استدعاؤها بعد كل تعديل في DOM)
+            lucide.createIcons();
+        }
+
+
+        // --- 7. معالجات الأحداث (Event Handlers) ---
+        
+        function attachGlobalListeners() {
+            
+            // استخدام تفويض الأحداث (Event Delegation)
+            document.body.addEventListener('submit', async (e) => {
+                e.preventDefault(); // منع الإرسال الافتراضي
+                const formId = e.target.id;
+                
+                if (formId === 'login-form') {
+                    const formData = new FormData(e.target);
+                    const email = formData.get('email');
+                    const password = formData.get('password');
+                    // التحقق من الزر الذي تم النقر عليه
+                    const action = e.submitter?.dataset.action;
+                    if (action === 'login-submit') {
+                        handleLogin(email, password);
+                    } else if (action === 'signup-submit') {
+                        handleSignup(email, password);
+                    }
+                }
+                
+                if (formId === 'settings-form') {
+                    const formData = new FormData(e.target);
+                    const newSettings = {
+                        lang: formData.get('lang'),
+                        theme: formData.get('theme'),
+                        apiKeys: {
+                            supabaseUrl: formData.get('supabaseUrl'),
+                            supabaseKey: formData.get('supabaseKey'),
+                            cloudinaryCloudName: formData.get('cloudinaryCloudName'),
+                            cloudinaryUploadPreset: formData.get('cloudinaryUploadPreset'),
+                            openRouterKey: formData.get('openRouterKey'),
+                            whatsappNumber: formData.get('whatsappNumber')
+                        }
+                    };
+                    // امسح أي خطأ سابق عند الحفظ
+                    AppState.setState({ settings: newSettings, errorMessage: null });
+                    saveSettings();
+                }
+                
+                if (formId === 'product-form') {
+                    const formData = new FormData(e.target);
+                    const productData = {
+                        name: formData.get('name'),
+                        description: formData.get('description'),
+                        price: parseFloat(formData.get('price')),
+                        stock: parseInt(formData.get('stock')),
+                        image_url: formData.get('image_url')
+                    };
+                    
+                    if (AppState.state.productToEdit) {
+                        // تحديث
+                        updateProduct(AppState.state.productToEdit.id, productData);
+                    } else {
+                        // إضافة
+                        addProduct(productData);
+                    }
+                }
+            });
+
+            // معالج النقرات
+            document.body.addEventListener('click', async (e) => {
+                const target = e.target.closest('[data-action]');
+                if (!target) return;
+                
+                const action = target.dataset.action;
+                const id = target.dataset.id;
+                
+                switch (action) {
+                    case 'go-to-settings':
+                        AppState.setState({ currentView: 'settings', errorMessage: null });
+                        break;
+                    
+                    case 'back-from-settings':
+                        // امسح أي رسالة خطأ من صفحة الإعدادات
+                        AppState.setState({ errorMessage: null });
+
+                        // حاول تهيئة الخدمات
+                        if (initServices()) {
+                            // نجح: اذهب للواجهة المناسبة (متجر/مدير)
+                            const nextView = AppState.state.user ? (AppState.state.user.role === 'admin' ? 'admin' : 'store') : 'login';
+                            AppState.setState({ currentView: nextView });
+                        } else {
+                            // فشل (المفاتيح لا تزال مفقودة): اذهب لصفحة تسجيل الدخول
+                            AppState.setState({ currentView: 'login' }); 
+                        }
+                        break;
+
+                    case 'logout':
+                        handleLogout();
+                        break;
+                    case 'go-to-home':
+                    case 'go-to-store':
+                        AppState.setState({ currentView: 'store' });
+                        break;
+                    case 'go-to-admin':
+                        AppState.setState({ currentView: 'admin' });
+                        break;
+                    
+                    // --- أحداث السلة والمتجر ---
+                    case 'open-cart':
+                        AppState.setState({ currentModal: 'cart' });
+                        break;
+                    case 'close-modal':
+                        AppState.setState({ currentModal: null, productToEdit: null, errorMessage: null });
+                        break;
+                    case 'add-to-cart':
+                        addToCart(parseInt(id));
+                        break;
+                    case 'remove-from-cart':
+                        removeFromCart(parseInt(id));
+                        break;
+                    case 'checkout':
+                        // (هنا يتم الربط مع بوابة الدفع، حالياً سنقوم فقط بتنبيه)
+                        showToast('Checkout process is not implemented.', 'info');
+                        break;
+                    
+                    // --- أحداث المدير ---
+                    case 'open-add-product-modal':
+                        AppState.setState({ currentModal: 'editProduct', productToEdit: null });
+                        break;
+                    case 'open-edit-product-modal':
+                        const product = AppState.state.products.find(p => p.id === parseInt(id));
+                        if (product) {
+                            AppState.setState({ currentModal: 'editProduct', productToEdit: product });
+                        }
+                        break;
+                    case 'delete-product':
+                        deleteProduct(parseInt(id));
+                        break;
+                    case 'upload-image':
+                        openCloudinaryWidget((imageUrl) => {
+                            // تحديث حقل الصورة ومعاينتها
+                            const urlInput = document.getElementById('image_url');
+                            const previewImg = document.getElementById('image-preview');
+                            if (urlInput && previewImg) {
+                                urlInput.value = imageUrl;
+                                previewImg.src = imageUrl;
+                                previewImg.classList.remove('hidden');
+                            }
+                        });
+                        break;
+                    case 'generate-description':
+                        const nameInput = document.getElementById('name');
+                        const descInput = document.getElementById('description');
+                        if (nameInput && descInput && nameInput.value) {
+                            target.disabled = true;
+                            target.innerHTML = t('generating');
+                            const description = await generateAIProductDescription(nameInput.value);
+                            if (description) {
+                                descInput.value = description;
+                            }
+                            target.disabled = false;
+                            target.innerHTML = `<i data-lucide="sparkles" class="w-3 h-3"></i> <span>${t('generateDescription')}</span>`;
+                            lucide.createIcons(); // إعادة رسم الأيقونة
+                        } else {
+                            showToast(t('productName') + ' is required.', 'error');
+                        }
+                        break;
+                }
+            });
+            
+            // معالج تغيير المدخلات (لتحديث كمية السلة)
+            document.body.addEventListener('change', (e) => {
+                const target = e.target.closest('[data-action="update-cart-quantity"]');
+                if (target) {
+                    const id = parseInt(target.dataset.id);
+                    const quantity = parseInt(target.value);
+                    updateCartQuantity(id, quantity);
+                }
+            });
+        }
+
+
+        // --- 8. نقطة البداية (Entry Point) ---
+        
+        function main() {
+            // 1. إضافة المستمع الرئيسي للعرض
+            AppState.addListener(renderApp);
+            
+            // 2. إرفاق معالجات الأحداث
+            attachGlobalListeners();
+            
+            // 3. تحميل الإعدادات من localStorage
+            loadSettings();
+
+            // 4. تهيئة الخدمات (Supabase)
+            // سيقوم هذا بالتحقق من المفاتيح. إذا كانت مفقودة،
+            // سيقوم بتعيين الواجهة إلى 'settings' (لأن الواجهة الحالية 'loading')
+            // ولكنه لن يعيّن رسالة خطأ.
+            initServices();
+            
+            // 5. العرض الأولي
+            // سيعرض 'settings' (مع تنبيه أزرق) إذا كانت المفاتيح مفقودة.
+            // أو سيعرض 'login' / 'store' / 'admin' إذا كانت موجودة.
+            renderApp();
+        }
+
+        // 🚀 تشغيل التطبيق
+        main();
+
+    </script>
+</body>
+</html>
+
